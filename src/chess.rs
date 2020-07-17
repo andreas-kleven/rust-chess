@@ -69,8 +69,8 @@ impl fmt::Display for Position {
 
 #[derive(Debug, Copy, Clone)]
 pub struct Move {
-    from: Position,
-    to: Position,
+    pub from: Position,
+    pub to: Position,
 }
 
 impl Move {
@@ -118,9 +118,11 @@ impl Player {
     pub fn is_white(&self) -> bool {
         self.num == 1
     }
+
     pub fn is_black(&self) -> bool {
         self.num == 2
     }
+
     pub fn is_none(&self) -> bool {
         !self.is_white() && !self.is_black()
     }
@@ -169,9 +171,9 @@ impl Square {
 
 #[derive(Debug)]
 pub struct Board {
-    pub player_none: Player,
     pub player1: Player,
     pub player2: Player,
+    pub turn: i32,
     pub cur_pos: Option<Position>,
     pub cur_moves: Vec<Position>,
     pub prev_move: Option<Move>,
@@ -181,9 +183,9 @@ pub struct Board {
 impl Board {
     pub fn new() -> Board {
         Board {
-            player_none: Player { num: 0 },
             player1: Player { num: 1 },
             player2: Player { num: 2 },
+            turn: 1,
             cur_pos: None,
             cur_moves: Vec::new(),
             prev_move: None,
@@ -228,6 +230,14 @@ impl Board {
                 self.grid[y][x] = squares[y * 8 + x];
             }
         }
+    }
+
+    pub fn white_turn(&self) -> bool {
+        self.turn == 1
+    }
+
+    pub fn black_turn(&self) -> bool {
+        self.turn == 2
     }
 
     pub fn get(&self, x: i32, y: i32) -> &Square {
@@ -365,12 +375,20 @@ impl Board {
 
         if pos_str.is_some() {
             let s = &pos_str.unwrap();
-            self.cur_pos = Position::from(s.as_bytes());
+            let pos_opt = Position::from(s.as_bytes());
 
-            if self.cur_pos.is_none() {
+            if pos_opt.is_none() {
                 return false;
             } else {
-                self.cur_moves = self.get_moves(&self.cur_pos.unwrap());
+                let pos = pos_opt.unwrap();
+                let square = self.getp(&pos);
+
+                if square.player != self.turn {
+                    return false;
+                }
+
+                self.cur_pos = pos_opt;
+                self.cur_moves = self.get_moves(&pos);
             }
         }
 
@@ -389,7 +407,7 @@ impl Board {
         let from_sq = self.getp(&mv.from).clone();
         let to_sq = self.getp(&mv.to).clone();
 
-        if from_sq.is_none() || from_sq.player == to_sq.player {
+        if from_sq.player != self.turn || from_sq.player == to_sq.player {
             return false;
         }
 
@@ -400,6 +418,8 @@ impl Board {
         self.setp(&mv.to, &from_sq);
         self.setp(&mv.from, &Square::from(Piece::None, 0));
         self.prev_move = Some(*mv);
+
+        self.turn = if self.turn == 1 { 2 } else { 1 };
 
         true
     }
