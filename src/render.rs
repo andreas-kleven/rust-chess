@@ -1,70 +1,108 @@
 use crate::chess::{Board, Piece, Square};
 use ansi_term::{ANSIString, Colour, Style};
 
-const EMPTY_COLOR: Colour = Colour::RGB(100, 100, 100);
-const WHITE_COLOR: Colour = Colour::White;
-const BLACK_COLOR: Colour = Colour::Red;
-const CURRENT_COLOR: Colour = Colour::Blue;
-const CURRENT_BACKGROUND: Colour = Colour::RGB(0, 255, 0);
+const WHITE_COLOR: Colour = Colour::RGB(255, 255, 255);
+const BLACK_COLOR: Colour = Colour::RGB(0, 0, 0);
+const MOVE_COLOR: Colour = Colour::Blue;
+const PREV_COLOR: Colour = Colour::Green;
+const BOARD_BACKGROUND_1: Colour = Colour::RGB(96, 96, 96);
+const BOARD_BACKGROUND_2: Colour = Colour::RGB(160, 160, 160);
+//const BOARD_BACKGROUND_1: Colour = Colour::RGB(119, 148, 85);
+//const BOARD_BACKGROUND_2: Colour = Colour::RGB(235, 235, 208);
 
 pub fn draw_board(board: &Board) {
-    let info_style = Colour::Black.on(Colour::Yellow);
+    let info_style = Colour::White;
+    let mut rows: Vec<String> = Vec::new();
 
     for y in (0..8).rev() {
-        let mut row: Vec<ANSIString> = Vec::with_capacity(8);
+        let mut columns: Vec<ANSIString> = Vec::with_capacity(8);
 
         for x in 0..8 {
             let square = &board.get(x, y);
-            let mut s = square_string(square);
+            let mut s = square_string(square, x, y);
 
-            if board.vis_pos.is_some() {
-                let moves_pos = &board.vis_pos.unwrap();
+            if board.cur_pos.is_some() {
+                let moves_pos = &board.cur_pos.unwrap();
 
                 if x == moves_pos.x && y == moves_pos.y {
-                    s = Style::new()
-                        .on(CURRENT_COLOR)
-                        .paint(square_letter(&square).to_string());
+                    s = square_string_style(square, &square_color(square).on(MOVE_COLOR));
                 }
 
-                if board.vis_moves.iter().any(|mv| mv.x == x && mv.y == y) {
-                    s = Style::new().on(CURRENT_BACKGROUND).paint(s.to_string());
+                if board.cur_moves.iter().any(|mv| mv.x == x && mv.y == y) {
+                    s = square_string_style(square, &square_color(square).on(MOVE_COLOR));
+                }
+            } else if board.prev_move.is_some() {
+                let prev_move = &board.prev_move.unwrap();
+
+                if (x == prev_move.from.x && y == prev_move.from.y)
+                    || (x == prev_move.to.x && y == prev_move.to.y)
+                {
+                    s = square_string_style(square, &square_color(square).on(PREV_COLOR));
                 }
             }
 
-            row.push(s);
+            columns.push(s);
         }
 
-        let cols_str: Vec<_> = row.iter().map(ToString::to_string).collect();
-        let line = cols_str.join(" ");
+        let cols_str: Vec<_> = columns.iter().map(ToString::to_string).collect();
+        let line = cols_str.join("");
         let line_num = info_style.paint(format!("{}", (y + 1).to_string()));
-        println!("{}   {}   {}", line_num, line, line_num);
+
+        rows.push(format!("{} {} {}", line_num, line, line_num));
     }
 
-    println!("\n    {}\n", info_style.paint("a b c d e f g h"));
+    println!("  {}", info_style.paint("a b c d e f g h"));
+    println!("{}", rows.join("\n"));
+    println!("  {}", info_style.paint("a b c d e f g h"));
 }
 
-fn square_string(square: &Square) -> ANSIString {
-    square_color(&square).paint(square_letter(&square).to_string())
+fn square_string(square: &Square, x: i32, y: i32) -> ANSIString {
+    let style = square_color(&square).on(square_backgroud(x, y));
+    square_string_style(square, &style)
+}
+
+fn square_string_style<'a>(square: &Square, style: &Style) -> ANSIString<'a> {
+    style.paint(format!("{} ", square_letter(square).to_string()))
 }
 
 fn square_letter(square: &Square) -> char {
-    match square.piece {
-        Piece::None => 'x',
-        Piece::Bishop => 'B',
-        Piece::King => 'K',
-        Piece::Knight => 'N',
-        Piece::Pawn => 'p',
-        Piece::Queen => 'Q',
-        Piece::Rook => 'R',
+    if square.is_white() && false {
+        match square.piece {
+            Piece::None => ' ',
+            Piece::Bishop => '♗',
+            Piece::King => '♔',
+            Piece::Knight => '♘',
+            Piece::Pawn => '♙',
+            Piece::Queen => '♕',
+            Piece::Rook => '♖',
+        }
+    } else {
+        match square.piece {
+            Piece::None => ' ',
+            Piece::Bishop => '♝',
+            Piece::King => '♚',
+            Piece::Knight => '♞',
+            Piece::Pawn => '♟',
+            Piece::Queen => '♛',
+            Piece::Rook => '♜',
+        }
     }
 }
 
 fn square_color(square: &Square) -> Style {
     if square.is_white() {
-        WHITE_COLOR.bold()
-    } else if square.is_black() {
-        BLACK_COLOR.bold()
+        Style::new().fg(WHITE_COLOR)
     } else {
-        Style::new().fg(EMPTY_COLOR)
+        Style::new().fg(BLACK_COLOR)
+    }
+}
+
+fn square_backgroud(x: i32, y: i32) -> Colour {
+    let odd = (y % 2) ^ (x % 2) == 0;
+
+    if odd {
+        BOARD_BACKGROUND_1
+    } else {
+        BOARD_BACKGROUND_2
     }
 }

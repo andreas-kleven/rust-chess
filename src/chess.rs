@@ -55,6 +55,10 @@ impl Position {
             _ => panic!("Invalid index '{}'", idx),
         }
     }
+
+    pub fn is_valid(&self) -> bool {
+        !(self.x < 0 || self.x >= 8 || self.y < 0 || self.y >= 8)
+    }
 }
 
 impl fmt::Display for Position {
@@ -63,13 +67,21 @@ impl fmt::Display for Position {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Move {
     from: Position,
     to: Position,
 }
 
 impl Move {
+    pub fn new(from: Position, to: Position) -> Option<Move> {
+        if from.x < 0 || from.x >= 8 || from.y < 0 || from.y >= 8 {
+            None
+        } else {
+            Some(Move { from, to })
+        }
+    }
+
     pub fn from(move_str: &str) -> Option<Move> {
         let bytes = move_str.as_bytes();
 
@@ -103,11 +115,14 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn is_white(self) -> bool {
+    pub fn is_white(&self) -> bool {
         self.num == 1
     }
-    pub fn is_black(self) -> bool {
+    pub fn is_black(&self) -> bool {
         self.num == 2
+    }
+    pub fn is_none(&self) -> bool {
+        !self.is_white() && !self.is_black()
     }
 }
 
@@ -131,11 +146,11 @@ pub enum Piece {
 #[derive(Debug, Clone, Copy)]
 pub struct Square {
     pub piece: Piece,
-    pub player: Player,
+    pub player: i32,
 }
 
 impl Square {
-    pub fn from(piece: Piece, player: Player) -> Square {
+    pub fn from(piece: Piece, player: i32) -> Square {
         Square { piece, player }
     }
 
@@ -144,62 +159,60 @@ impl Square {
     }
 
     pub fn is_white(&self) -> bool {
-        self.player.is_white()
+        self.player == 1
     }
 
     pub fn is_black(&self) -> bool {
-        self.player.is_black()
+        self.player == 2
     }
 }
 
 #[derive(Debug)]
 pub struct Board {
+    pub player_none: Player,
     pub player1: Player,
     pub player2: Player,
-    pub mv_pos: Option<Position>,
-    pub vis_pos: Option<Position>,
-    pub vis_moves: Vec<Position>,
+    pub cur_pos: Option<Position>,
+    pub cur_moves: Vec<Position>,
+    pub prev_move: Option<Move>,
     pub grid: [[Square; 8]; 8],
 }
 
 impl Board {
     pub fn new() -> Board {
-        let player0 = Player { num: 0 };
-        let player1 = Player { num: 1 };
-        let player2 = Player { num: 2 };
-
         Board {
-            player1,
-            player2,
-            mv_pos: None,
-            vis_pos: None,
-            vis_moves: Vec::new(),
+            player_none: Player { num: 0 },
+            player1: Player { num: 1 },
+            player2: Player { num: 2 },
+            cur_pos: None,
+            cur_moves: Vec::new(),
+            prev_move: None,
             grid: [
                 [
-                    Square::from(Piece::Rook, player1),
-                    Square::from(Piece::Knight, player1),
-                    Square::from(Piece::Bishop, player1),
-                    Square::from(Piece::King, player1),
-                    Square::from(Piece::Queen, player1),
-                    Square::from(Piece::Bishop, player1),
-                    Square::from(Piece::Knight, player1),
-                    Square::from(Piece::Rook, player1),
+                    Square::from(Piece::Rook, 1),
+                    Square::from(Piece::Knight, 1),
+                    Square::from(Piece::Bishop, 1),
+                    Square::from(Piece::King, 1),
+                    Square::from(Piece::Queen, 1),
+                    Square::from(Piece::Bishop, 1),
+                    Square::from(Piece::Knight, 1),
+                    Square::from(Piece::Rook, 1),
                 ],
-                [Square::from(Piece::Pawn, player1); 8],
-                [Square::from(Piece::None, player0); 8],
-                [Square::from(Piece::None, player0); 8],
-                [Square::from(Piece::None, player0); 8],
-                [Square::from(Piece::None, player0); 8],
-                [Square::from(Piece::Pawn, player2); 8],
+                [Square::from(Piece::Pawn, 1); 8],
+                [Square::from(Piece::None, 0); 8],
+                [Square::from(Piece::None, 0); 8],
+                [Square::from(Piece::None, 0); 8],
+                [Square::from(Piece::None, 0); 8],
+                [Square::from(Piece::Pawn, 2); 8],
                 [
-                    Square::from(Piece::Rook, player2),
-                    Square::from(Piece::Knight, player2),
-                    Square::from(Piece::Bishop, player2),
-                    Square::from(Piece::King, player2),
-                    Square::from(Piece::Queen, player2),
-                    Square::from(Piece::Bishop, player2),
-                    Square::from(Piece::Knight, player2),
-                    Square::from(Piece::Rook, player2),
+                    Square::from(Piece::Rook, 2),
+                    Square::from(Piece::Knight, 2),
+                    Square::from(Piece::Bishop, 2),
+                    Square::from(Piece::King, 2),
+                    Square::from(Piece::Queen, 2),
+                    Square::from(Piece::Bishop, 2),
+                    Square::from(Piece::Knight, 2),
+                    Square::from(Piece::Rook, 2),
                 ],
             ],
         }
@@ -223,6 +236,15 @@ impl Board {
 
     pub fn getp(&self, pos: &Position) -> &Square {
         self.get(pos.x as i32, pos.y as i32)
+    }
+
+    pub fn set(&mut self, x: i32, y: i32, square: &Square) {
+        self.grid[y as usize][x as usize].piece = square.piece;
+        self.grid[y as usize][x as usize].player = square.player;
+    }
+
+    pub fn setp(&mut self, pos: &Position, square: &Square) {
+        self.set(pos.x as i32, pos.y as i32, square);
     }
 
     pub fn can_move_to(&self, square: &Square, pos: &Position, attack: bool) -> bool {
@@ -337,28 +359,47 @@ impl Board {
         moves.iter().any(|p| p.x == mv.to.x && p.y == mv.to.y)
     }
 
-    pub fn visualize_moves(&mut self, pos_str: Option<&&str>) -> bool {
-        self.vis_pos = None;
-        self.vis_moves.clear();
+    pub fn select(&mut self, pos_str: Option<&&str>) -> bool {
+        self.cur_pos = None;
+        self.cur_moves.clear();
 
         if pos_str.is_some() {
             let s = &pos_str.unwrap();
-            self.vis_pos = Position::from(s.as_bytes());
+            self.cur_pos = Position::from(s.as_bytes());
 
-            if self.vis_pos.is_none() {
+            if self.cur_pos.is_none() {
                 return false;
             } else {
-                self.vis_moves = self.get_moves(&self.vis_pos.unwrap());
+                self.cur_moves = self.get_moves(&self.cur_pos.unwrap());
             }
         }
 
         true
     }
 
-    pub fn do_move(&self, mv: &Move) -> bool {
+    pub fn do_move(&mut self, mv: &Move) -> bool {
         if !self.can_move(mv) {
             return false;
         }
+
+        if !mv.from.is_valid() || !mv.to.is_valid() {
+            return false;
+        }
+
+        let from_sq = self.getp(&mv.from).clone();
+        let to_sq = self.getp(&mv.to).clone();
+
+        if from_sq.is_none() || from_sq.player == to_sq.player {
+            return false;
+        }
+
+        if !to_sq.is_none() {
+            //
+        }
+
+        self.setp(&mv.to, &from_sq);
+        self.setp(&mv.from, &Square::from(Piece::None, 0));
+        self.prev_move = Some(*mv);
 
         true
     }
