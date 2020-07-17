@@ -2,7 +2,7 @@ use ansi_term::{ANSIString, Colour, Style};
 mod chess;
 mod render;
 
-use chess::{Board, Move, Position};
+use chess::{Board, Move, Piece, Position};
 use std::io::{stdin, stdout, Write};
 
 fn main() {
@@ -19,6 +19,7 @@ fn main() {
 
         if message.len() > 0 {
             println!("{}", message.to_string());
+            message = ANSIString::from("");
         }
 
         if board.is_checkmate() {
@@ -37,6 +38,46 @@ fn main() {
 
         if !handle_input(&mut message, &mut board) {
             break;
+        }
+
+        if board.get_promoting().is_some() {
+            message = ANSIString::from("");
+            render::draw_board(&board);
+            println!();
+
+            loop {
+                let color = Colour::Green;
+
+                print!(
+                    "Promote ({}ueen/{}ook/{}night/{}ishop): ",
+                    color.paint("q"),
+                    color.paint("r"),
+                    color.paint("k"),
+                    color.paint("b"),
+                );
+
+                stdout().flush().unwrap();
+
+                let line = read_line();
+
+                let piece = match line.trim() {
+                    "b" | "bishop" => Piece::Bishop,
+                    "k" | "knight" => Piece::Knight,
+                    "q" | "queen" => Piece::Queen,
+                    "r" | "rook" => Piece::Rook,
+                    _ => Piece::None,
+                };
+
+                if piece != Piece::None {
+                    if board.promote(piece) {
+                        break;
+                    } else {
+                        println!("{}", Colour::Red.paint("Could not promote"));
+                    }
+                } else {
+                    println!("{}", Colour::Red.paint("Invalid piece type"));
+                }
+            }
         }
     }
 }

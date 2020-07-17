@@ -82,34 +82,10 @@ impl Board {
     }
 
     pub fn test(&mut self) {
-        self.grid = [
-            [
-                Square::from(Piece::King, 1),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::Queen, 2),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-            ],
-            [
-                Square::from(Piece::Pawn, 1),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-                Square::from(Piece::None, 0),
-            ],
-            [Square::from(Piece::None, 0); 8],
-            [Square::from(Piece::None, 0); 8],
-            [Square::from(Piece::None, 0); 8],
-            [Square::from(Piece::None, 0); 8],
-            [Square::from(Piece::None, 0); 8],
-            [Square::from(Piece::None, 0); 8],
-        ];
+        self.grid = [[Square::from(Piece::None, 0); 8]; 8];
+        self.grid[0][0] = Square::from(Piece::King, 1);
+        self.grid[1][2] = Square::from(Piece::Queen, 2);
+        self.grid[6][0] = Square::from(Piece::Pawn, 1);
     }
 
     pub fn white_turn(&self) -> bool {
@@ -129,8 +105,7 @@ impl Board {
     }
 
     pub fn set(&mut self, x: i32, y: i32, square: &Square) {
-        self.grid[y as usize][x as usize].piece = square.piece;
-        self.grid[y as usize][x as usize].player = square.player;
+        self.grid[y as usize][x as usize] = *square;
     }
 
     pub fn setp(&mut self, pos: &Position, square: &Square) {
@@ -365,15 +340,50 @@ impl Board {
         self.setp(&mv.to, &from_sq);
         self.setp(&mv.from, &Square::from(Piece::None, 0));
 
-        /*if self.is_check() {
-            self.setp(&mv.to, &to_sq);
-            self.setp(&mv.from, &from_sq);
-            return false;
-        }*/
-
         self.prev_move = Some(*mv);
-        self.turn = if self.turn == 1 { 2 } else { 1 };
+
+        if self.get_promoting().is_none() {
+            self.next_turn();
+        }
 
         true
+    }
+
+    pub fn get_promoting(&self) -> Option<Position> {
+        let y = if self.turn == 1 { 7 } else { 0 };
+
+        for x in 0..8 {
+            let square = self.grid[y][x];
+
+            if square.player == self.turn && square.piece == Piece::Pawn {
+                return Some(Position::new(x as i32, y as i32));
+            }
+        }
+
+        return None;
+    }
+
+    pub fn promote(&mut self, piece: Piece) -> bool {
+        let pos = self.get_promoting();
+
+        if pos.is_none() {
+            return false;
+        }
+
+        if piece != Piece::Bishop
+            && piece != Piece::Knight
+            && piece != Piece::Queen
+            && piece != Piece::Rook
+        {
+            return false;
+        }
+
+        self.setp(&pos.unwrap(), &Square::from(piece, self.turn));
+        self.next_turn();
+        true
+    }
+
+    pub fn next_turn(&mut self) {
+        self.turn = if self.turn == 1 { 2 } else { 1 };
     }
 }
