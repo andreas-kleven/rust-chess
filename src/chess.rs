@@ -180,6 +180,20 @@ pub struct Board {
     pub grid: [[Square; 8]; 8],
 }
 
+impl Clone for Board {
+    fn clone(&self) -> Self {
+        Board {
+            player1: self.player1.clone(),
+            player2: self.player2.clone(),
+            turn: self.turn.clone(),
+            cur_pos: None,
+            cur_moves: Vec::new(),
+            prev_move: None,
+            grid: self.grid.clone(),
+        }
+    }
+}
+
 impl Board {
     pub fn new() -> Board {
         Board {
@@ -232,6 +246,37 @@ impl Board {
         }
     }
 
+    pub fn test(&mut self) {
+        self.grid = [
+            [
+                Square::from(Piece::King, 1),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::Queen, 2),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+            ],
+            [
+                Square::from(Piece::Pawn, 1),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+                Square::from(Piece::None, 0),
+            ],
+            [Square::from(Piece::None, 0); 8],
+            [Square::from(Piece::None, 0); 8],
+            [Square::from(Piece::None, 0); 8],
+            [Square::from(Piece::None, 0); 8],
+            [Square::from(Piece::None, 0); 8],
+            [Square::from(Piece::None, 0); 8],
+        ];
+    }
+
     pub fn white_turn(&self) -> bool {
         self.turn == 1
     }
@@ -274,7 +319,7 @@ impl Board {
         }
     }
 
-    pub fn get_moves(&self, p: &Position) -> Vec<Position> {
+    pub fn get_moves(&self, p: &Position, all: bool) -> Vec<Position> {
         let mut moves = vec![];
         let square = self.getp(p);
         let row = self.get_row(square, p);
@@ -361,11 +406,78 @@ impl Board {
             _ => (),
         }
 
+        if !all {
+            let mut cloned = self.clone();
+
+            moves.retain(|mv| {
+                let from_sq = cloned.getp(&p).clone();
+                let to_sq = cloned.getp(&mv).clone();
+                cloned.setp(&mv, &from_sq);
+                cloned.setp(&p, &Square::from(Piece::None, 0));
+                let check = cloned.is_check();
+                cloned.setp(&p, &from_sq);
+                cloned.setp(&mv, &to_sq);
+                !check
+            })
+        }
+
         moves
     }
 
+    pub fn is_check(&self) -> bool {
+        for y in 0..8 {
+            for x in 0..8 {
+                let square = self.get(x, y);
+
+                if square.player == 0 || square.player == self.turn {
+                    continue;
+                }
+
+                let moves = self.get_moves(&Position::new(x, y), true);
+
+                for mv in moves.iter() {
+                    let to_sq = self.getp(&mv);
+
+                    if to_sq.piece == Piece::King && to_sq.player == self.turn {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        false
+    }
+
+    pub fn is_stalemate(&self) -> bool {
+        !self.is_check() && !self.can_move_any()
+    }
+
+    pub fn is_checkmate(&self) -> bool {
+        self.is_check() && !self.can_move_any()
+    }
+
+    pub fn can_move_any(&self) -> bool {
+        for y in 0..8 {
+            for x in 0..8 {
+                let square = self.get(x, y);
+
+                if square.player != self.turn {
+                    continue;
+                }
+
+                let moves = self.get_moves(&Position::new(x, y), false);
+
+                if moves.len() > 0 {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
     pub fn can_move(&self, mv: &Move) -> bool {
-        let moves = self.get_moves(&mv.from);
+        let moves = self.get_moves(&mv.from, false);
         moves.iter().any(|p| p.x == mv.to.x && p.y == mv.to.y)
     }
 
@@ -388,7 +500,7 @@ impl Board {
                 }
 
                 self.cur_pos = pos_opt;
-                self.cur_moves = self.get_moves(&pos);
+                self.cur_moves = self.get_moves(&pos, false);
             }
         }
 
@@ -417,8 +529,14 @@ impl Board {
 
         self.setp(&mv.to, &from_sq);
         self.setp(&mv.from, &Square::from(Piece::None, 0));
-        self.prev_move = Some(*mv);
 
+        /*if self.is_check() {
+            self.setp(&mv.to, &to_sq);
+            self.setp(&mv.from, &from_sq);
+            return false;
+        }*/
+
+        self.prev_move = Some(*mv);
         self.turn = if self.turn == 1 { 2 } else { 1 };
 
         true
