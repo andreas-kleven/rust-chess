@@ -1,4 +1,4 @@
-use crate::chess::{Board, Piece, PieceType};
+use crate::chess::{Board, Piece, Square};
 use ansi_term::{ANSIString, Colour, Style};
 
 const EMPTY_COLOR: Colour = Colour::RGB(100, 100, 100);
@@ -14,8 +14,8 @@ pub fn draw_board(board: &Board) {
         let mut row: Vec<ANSIString> = Vec::with_capacity(8);
 
         for x in 0..8 {
-            let piece = &board.get(x, y);
-            let mut s = piece_string(piece);
+            let square = &board.get(x, y);
+            let mut s = square_string(square);
 
             if board.vis_pos.is_some() {
                 let moves_pos = &board.vis_pos.unwrap();
@@ -23,7 +23,7 @@ pub fn draw_board(board: &Board) {
                 if x == moves_pos.x && y == moves_pos.y {
                     s = Style::new()
                         .on(CURRENT_COLOR)
-                        .paint(piece_letter(&piece).to_string());
+                        .paint(square_letter(&square).to_string());
                 }
 
                 if board.vis_moves.iter().any(|mv| mv.x == x && mv.y == y) {
@@ -43,26 +43,26 @@ pub fn draw_board(board: &Board) {
     println!("\n    {}\n", info_style.paint("a b c d e f g h"));
 }
 
-fn piece_string(piece: &Piece) -> ANSIString {
-    piece_color(&piece).paint(piece_letter(&piece).to_string())
+fn square_string(square: &Square) -> ANSIString {
+    square_color(&square).paint(square_letter(&square).to_string())
 }
 
-fn piece_letter(piece: &Piece) -> char {
-    match piece.piece_type {
-        PieceType::None => 'x',
-        PieceType::Bishop => 'B',
-        PieceType::King => 'K',
-        PieceType::Knight => 'N',
-        PieceType::Pawn => 'p',
-        PieceType::Queen => 'Q',
-        PieceType::Rook => 'R',
+fn square_letter(square: &Square) -> char {
+    match square.piece {
+        Piece::None => 'x',
+        Piece::Bishop => 'B',
+        Piece::King => 'K',
+        Piece::Knight => 'N',
+        Piece::Pawn => 'p',
+        Piece::Queen => 'Q',
+        Piece::Rook => 'R',
     }
 }
 
-fn piece_color(piece: &Piece) -> Style {
-    if piece.is_white() {
+fn square_color(square: &Square) -> Style {
+    if square.is_white() {
         WHITE_COLOR.bold()
-    } else if piece.is_black() {
+    } else if square.is_black() {
         BLACK_COLOR.bold()
     } else {
         Style::new().fg(EMPTY_COLOR)

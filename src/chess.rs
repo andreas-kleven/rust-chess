@@ -118,7 +118,7 @@ impl PartialEq for Player {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum PieceType {
+pub enum Piece {
     None,
     Bishop,
     King,
@@ -129,18 +129,18 @@ pub enum PieceType {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Piece {
-    pub piece_type: PieceType,
+pub struct Square {
+    pub piece: Piece,
     pub player: Player,
 }
 
-impl Piece {
-    pub fn from(piece_type: PieceType, player: Player) -> Piece {
-        Piece { piece_type, player }
+impl Square {
+    pub fn from(piece: Piece, player: Player) -> Square {
+        Square { piece, player }
     }
 
     pub fn is_none(&self) -> bool {
-        self.piece_type == PieceType::None
+        self.piece == Piece::None
     }
 
     pub fn is_white(&self) -> bool {
@@ -159,7 +159,7 @@ pub struct Board {
     pub mv_pos: Option<Position>,
     pub vis_pos: Option<Position>,
     pub vis_moves: Vec<Position>,
-    pub grid: [[Piece; 8]; 8],
+    pub grid: [[Square; 8]; 8],
 }
 
 impl Board {
@@ -176,66 +176,66 @@ impl Board {
             vis_moves: Vec::new(),
             grid: [
                 [
-                    Piece::from(PieceType::Rook, player1),
-                    Piece::from(PieceType::Knight, player1),
-                    Piece::from(PieceType::Bishop, player1),
-                    Piece::from(PieceType::King, player1),
-                    Piece::from(PieceType::Queen, player1),
-                    Piece::from(PieceType::Bishop, player1),
-                    Piece::from(PieceType::Knight, player1),
-                    Piece::from(PieceType::Rook, player1),
+                    Square::from(Piece::Rook, player1),
+                    Square::from(Piece::Knight, player1),
+                    Square::from(Piece::Bishop, player1),
+                    Square::from(Piece::King, player1),
+                    Square::from(Piece::Queen, player1),
+                    Square::from(Piece::Bishop, player1),
+                    Square::from(Piece::Knight, player1),
+                    Square::from(Piece::Rook, player1),
                 ],
-                [Piece::from(PieceType::Pawn, player1); 8],
-                [Piece::from(PieceType::None, player0); 8],
-                [Piece::from(PieceType::None, player0); 8],
-                [Piece::from(PieceType::None, player0); 8],
-                [Piece::from(PieceType::None, player0); 8],
-                [Piece::from(PieceType::Pawn, player2); 8],
+                [Square::from(Piece::Pawn, player1); 8],
+                [Square::from(Piece::None, player0); 8],
+                [Square::from(Piece::None, player0); 8],
+                [Square::from(Piece::None, player0); 8],
+                [Square::from(Piece::None, player0); 8],
+                [Square::from(Piece::Pawn, player2); 8],
                 [
-                    Piece::from(PieceType::Rook, player2),
-                    Piece::from(PieceType::Knight, player2),
-                    Piece::from(PieceType::Bishop, player2),
-                    Piece::from(PieceType::King, player2),
-                    Piece::from(PieceType::Queen, player2),
-                    Piece::from(PieceType::Bishop, player2),
-                    Piece::from(PieceType::Knight, player2),
-                    Piece::from(PieceType::Rook, player2),
+                    Square::from(Piece::Rook, player2),
+                    Square::from(Piece::Knight, player2),
+                    Square::from(Piece::Bishop, player2),
+                    Square::from(Piece::King, player2),
+                    Square::from(Piece::Queen, player2),
+                    Square::from(Piece::Bishop, player2),
+                    Square::from(Piece::Knight, player2),
+                    Square::from(Piece::Rook, player2),
                 ],
             ],
         }
     }
 
     pub fn randomize(&mut self) {
-        let mut pieces = self.grid.concat();
+        let mut squares = self.grid.concat();
         let mut rng = thread_rng();
-        pieces.shuffle(&mut rng);
+        squares.shuffle(&mut rng);
 
         for y in 0..8 {
             for x in 0..8 {
-                self.grid[y][x] = pieces[y * 8 + x];
+                self.grid[y][x] = squares[y * 8 + x];
             }
         }
     }
 
-    pub fn get(&self, x: i32, y: i32) -> &Piece {
+    pub fn get(&self, x: i32, y: i32) -> &Square {
         &self.grid[y as usize][x as usize]
     }
 
-    pub fn getp(&self, pos: &Position) -> &Piece {
+    pub fn getp(&self, pos: &Position) -> &Square {
         self.get(pos.x as i32, pos.y as i32)
     }
 
-    pub fn can_move_to(&self, piece: &Piece, pos: &Position, attack: bool) -> bool {
+    pub fn can_move_to(&self, square: &Square, pos: &Position, attack: bool) -> bool {
         if pos.x < 0 || pos.x >= 8 || pos.y < 0 || pos.y >= 8 {
             false
         } else {
-            let other_piece = self.getp(pos);
-            other_piece.is_none() || (attack && other_piece.player != piece.player)
+            let other_square = self.getp(pos);
+            other_square.is_none() || (attack && other_square.player != square.player)
         }
     }
 
-    pub fn get_row(&self, piece: &Piece, pos: &Position) -> i32 {
-        if piece.is_white() {
+    pub fn get_row(&self, square: &Square, pos: &Position) -> i32 {
+        if square.is_white() {
             pos.y
         } else {
             7 - pos.y
@@ -244,11 +244,11 @@ impl Board {
 
     pub fn get_moves(&self, p: &Position) -> Vec<Position> {
         let mut moves = vec![];
-        let piece = self.getp(p);
-        let row = self.get_row(piece, p);
+        let square = self.getp(p);
+        let row = self.get_row(square, p);
 
         let mut try_add = |add_pos: Position, attack: bool| -> bool {
-            if self.can_move_to(piece, &add_pos, attack) {
+            if self.can_move_to(square, &add_pos, attack) {
                 let is_none = self.getp(&add_pos).is_none();
                 moves.push(add_pos);
                 is_none
@@ -257,9 +257,9 @@ impl Board {
             }
         };
 
-        match piece.piece_type {
-            PieceType::Pawn => {
-                let sign = if piece.is_white() { 1 } else { -1 };
+        match square.piece {
+            Piece::Pawn => {
+                let sign = if square.is_white() { 1 } else { -1 };
 
                 if try_add(Position::new(p.x, p.y + sign), false) {
                     if row == 1 {
@@ -271,16 +271,16 @@ impl Board {
                 let a2 = Position::new(p.x - 1, p.y + sign);
 
                 for pa in vec![a1, a2] {
-                    if self.can_move_to(piece, &pa, true) {
+                    if self.can_move_to(square, &pa, true) {
                         let other1 = self.getp(&pa);
 
-                        if !other1.is_none() && other1.player != piece.player {
+                        if !other1.is_none() && other1.player != square.player {
                             try_add(pa, true);
                         }
                     }
                 }
             }
-            PieceType::Bishop => {
+            Piece::Bishop => {
                 for idx in 0..4 {
                     for dist in 1..8 {
                         if !try_add(p.corner(idx, dist), true) {
@@ -289,7 +289,7 @@ impl Board {
                     }
                 }
             }
-            PieceType::Rook => {
+            Piece::Rook => {
                 for idx in 0..4 {
                     for dist in 1..8 {
                         if !try_add(p.side(idx, dist), true) {
@@ -298,7 +298,7 @@ impl Board {
                     }
                 }
             }
-            PieceType::Queen => {
+            Piece::Queen => {
                 for idx in 0..4 {
                     for dist in 1..8 {
                         if !try_add(p.side(idx, dist), true) {
@@ -314,13 +314,13 @@ impl Board {
                     }
                 }
             }
-            PieceType::King => {
+            Piece::King => {
                 for idx in 0..4 {
                     try_add(p.side(idx, 1), true);
                     try_add(p.corner(idx, 1), true);
                 }
             }
-            PieceType::Knight => {
+            Piece::Knight => {
                 for idx in 0..4 {
                     try_add(p.side(idx, 2).side((idx + 1) % 4, 1), true);
                     try_add(p.side(idx, 2).side((idx + 3) % 4, 1), true);
