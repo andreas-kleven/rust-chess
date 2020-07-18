@@ -10,11 +10,12 @@ const BOARD_BACKGROUND_2: Colour = Colour::RGB(160, 160, 160);
 //const BOARD_BACKGROUND_1: Colour = Colour::RGB(119, 148, 85);
 //const BOARD_BACKGROUND_2: Colour = Colour::RGB(235, 235, 208);
 
-pub fn draw_board(board: &Board) {
+pub fn draw_board(board: &Board, reverse: bool) {
     let info_style = Colour::White;
     let mut rows: Vec<String> = Vec::new();
 
-    for y in (0..8).rev() {
+    for yi in 0..8 {
+        let y = if reverse { yi } else { 7 - yi };
         let mut columns: Vec<ANSIString> = Vec::with_capacity(8);
 
         for x in 0..8 {
@@ -28,7 +29,11 @@ pub fn draw_board(board: &Board) {
                     s = square_string_style(square, &square_color(square).on(MOVE_COLOR));
                 }
 
-                if board.cur_moves.iter().any(|mv| mv.to.x == x && mv.to.y == y) {
+                if board
+                    .cur_moves
+                    .iter()
+                    .any(|mv| mv.to.x == x && mv.to.y == y)
+                {
                     s = square_string_style(square, &square_color(square).on(MOVE_COLOR));
                 }
             } else if board.prev_move.is_some() {

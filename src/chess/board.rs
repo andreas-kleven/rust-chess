@@ -85,7 +85,7 @@ impl Board {
         self.grid = [[Square::from(Piece::None, 0); 8]; 8];
         self.grid[0][4] = Square::from(Piece::King, 1);
         self.grid[5][2] = Square::from(Piece::Knight, 2);
-        self.grid[1][1] = Square::from(Piece::Pawn, 1);
+        self.grid[6][1] = Square::from(Piece::Pawn, 1);
         self.grid[0][0] = Square::from(Piece::Rook, 1);
         self.grid[0][7] = Square::from(Piece::Rook, 1);
     }

@@ -9,7 +9,7 @@ pub struct Move {
 
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> {}", self.from, self.to)
+        write!(f, "{} {}", self.from, self.to)
     }
 }
 

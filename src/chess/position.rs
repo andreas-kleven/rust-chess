@@ -8,7 +8,9 @@ pub struct Position {
 
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {})", self.x, self.y)
+        let x = (self.x as u8 + 'a' as u8) as char;
+        let y = self.y + 1;
+        write!(f, "{}{}", x, y)
     }
 }
 
