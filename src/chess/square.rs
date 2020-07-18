@@ -5,11 +5,12 @@ use std::fmt;
 pub struct Square {
     pub piece: Piece,
     pub player: i32,
+    pub moved: bool,
 }
 
 impl Square {
     pub fn from(piece: Piece, player: i32) -> Square {
-        Square { piece, player }
+        Square { piece, player, moved: false }
     }
 
     pub fn is_none(&self) -> bool {

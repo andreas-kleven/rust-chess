@@ -3,8 +3,8 @@ use ansi_term::{ANSIString, Colour, Style};
 
 const WHITE_COLOR: Colour = Colour::RGB(255, 255, 255);
 const BLACK_COLOR: Colour = Colour::RGB(0, 0, 0);
-const MOVE_COLOR: Colour = Colour::Blue;
-const PREV_COLOR: Colour = Colour::Green;
+const MOVE_COLOR: Colour = Colour::RGB(64, 128, 160);
+const PREV_COLOR: Colour = Colour::RGB(96, 128, 96);
 const BOARD_BACKGROUND_1: Colour = Colour::RGB(96, 96, 96);
 const BOARD_BACKGROUND_2: Colour = Colour::RGB(160, 160, 160);
 //const BOARD_BACKGROUND_1: Colour = Colour::RGB(119, 148, 85);
@@ -28,7 +28,7 @@ pub fn draw_board(board: &Board) {
                     s = square_string_style(square, &square_color(square).on(MOVE_COLOR));
                 }
 
-                if board.cur_moves.iter().any(|mv| mv.x == x && mv.y == y) {
+                if board.cur_moves.iter().any(|mv| mv.to.x == x && mv.to.y == y) {
                     s = square_string_style(square, &square_color(square).on(MOVE_COLOR));
                 }
             } else if board.prev_move.is_some() {

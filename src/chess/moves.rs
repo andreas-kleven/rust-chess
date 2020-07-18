@@ -13,6 +13,12 @@ impl fmt::Display for Move {
     }
 }
 
+impl PartialEq for Move {
+    fn eq(&self, other: &Self) -> bool {
+        return self.from == other.from && self.to == other.to;
+    }
+}
+
 impl Move {
     pub fn new(from: Position, to: Position) -> Option<Move> {
         if from.x < 0 || from.x >= 8 || from.y < 0 || from.y >= 8 {
