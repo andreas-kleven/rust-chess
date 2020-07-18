@@ -1,6 +1,5 @@
 use crate::chess::{Board, Move, Piece};
-use std::io;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream};
 
 pub trait Interface {
@@ -34,7 +33,7 @@ impl Interface for DummyInterface {
         true
     }
 
-    fn send_command(&mut self, prefix: &str, data: String) -> Option<bool> {
+    fn send_command(&mut self, _: &str, _: String) -> Option<bool> {
         Some(true)
     }
 
@@ -42,7 +41,7 @@ impl Interface for DummyInterface {
         None
     }
 
-    fn wait(&mut self, board: &mut Board) -> bool {
+    fn wait(&mut self, _: &mut Board) -> bool {
         true
     }
 }

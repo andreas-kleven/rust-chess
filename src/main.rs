@@ -1,4 +1,4 @@
-use ansi_term::{ANSIString, Colour, Style};
+use ansi_term::{ANSIString, Colour};
 mod chess;
 mod net;
 mod render;
@@ -19,7 +19,7 @@ struct Context<'a> {
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let mut player = 0;
+    let player: i32;
 
     let interface: Box<dyn Interface> = match args.get(1) {
         Some(s) => {
@@ -65,8 +65,8 @@ fn main() {
         ctx.message = ANSIString::from(format!("You are playing as {}", color));
     }
 
-    ctx.board.randomize();
-    ctx.board.test();
+    //ctx.board.randomize();
+    //ctx.board.test();
 
     main_loop(&mut ctx);
 }
@@ -198,7 +198,6 @@ fn do_move(ctx: &mut Context, mv_opt: Option<Move>) {
         return;
     }
 
-    ctx.message = Colour::Green.paint("Move ok");
     ctx.interface.send_move(&mv);
 }
 

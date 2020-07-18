@@ -56,7 +56,7 @@ pub fn draw_board(board: &Board, reverse: bool) {
         rows.push(format!("{} {} {}", line_num, line, line_num));
     }
 
-    println!("  {}", info_style.paint("a b c d e f g h"));
+    println!("\n  {}", info_style.paint("a b c d e f g h"));
     println!("{}", rows.join("\n"));
     println!("  {}", info_style.paint("a b c d e f g h"));
 }

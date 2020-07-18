@@ -1,13 +1,10 @@
 use rand::seq::SliceRandom;
 use rand::thread_rng;
-use std::fmt;
 
-use crate::chess::{Move, Piece, Player, Position, Square};
+use crate::chess::{Move, Piece, Position, Square};
 
 #[derive(Debug)]
 pub struct Board {
-    pub player1: Player,
-    pub player2: Player,
     pub turn: i32,
     pub cur_pos: Option<Position>,
     pub cur_moves: Vec<Move>,
@@ -18,8 +15,6 @@ pub struct Board {
 impl Clone for Board {
     fn clone(&self) -> Self {
         Board {
-            player1: self.player1.clone(),
-            player2: self.player2.clone(),
             turn: self.turn.clone(),
             cur_pos: None,
             cur_moves: Vec::new(),
@@ -32,8 +27,6 @@ impl Clone for Board {
 impl Board {
     pub fn new() -> Board {
         Board {
-            player1: Player { num: 1 },
-            player2: Player { num: 2 },
             turn: 1,
             cur_pos: None,
             cur_moves: Vec::new(),
@@ -69,6 +62,7 @@ impl Board {
         }
     }
 
+    #[allow(dead_code)]
     pub fn randomize(&mut self) {
         let mut squares = self.grid.concat();
         let mut rng = thread_rng();
@@ -81,6 +75,7 @@ impl Board {
         }
     }
 
+    #[allow(dead_code)]
     pub fn test(&mut self) {
         self.grid = [[Square::from(Piece::None, 0); 8]; 8];
         self.grid[0][4] = Square::from(Piece::King, 1);
@@ -88,14 +83,6 @@ impl Board {
         self.grid[6][1] = Square::from(Piece::Pawn, 1);
         self.grid[0][0] = Square::from(Piece::Rook, 1);
         self.grid[0][7] = Square::from(Piece::Rook, 1);
-    }
-
-    pub fn white_turn(&self) -> bool {
-        self.turn == 1
-    }
-
-    pub fn black_turn(&self) -> bool {
-        self.turn == 2
     }
 
     pub fn get(&self, x: i32, y: i32) -> &Square {
